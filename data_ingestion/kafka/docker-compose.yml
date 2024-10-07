@@ -1,0 +1,51 @@
+version: '3.7'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_HOST_NAME: localhost  
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_MESSAGE_MAX_BYTES: "1048576000"
+      KAFKA_REPLICA_FETCH_MAX_BYTES: "1048576000"
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--zookeeper", "zookeeper:2181", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5  
+    depends_on:
+      - zookeeper
+
+  producer:
+    build:
+      context: .
+      dockerfile: dockerfile
+    environment:
+      KAFKA_SERVER: kafka:9092
+    depends_on:
+      - kafka
+    command: python producer.py
+
+  consumer:
+    build:
+      context: .
+      dockerfile: dockerfile  # Ensure your Dockerfile can install the required dependencies
+    environment:
+      KAFKA_SERVER: kafka:9092
+    depends_on:
+      - kafka
+    command: python consumer.py  # This runs the consumer when the container starts
