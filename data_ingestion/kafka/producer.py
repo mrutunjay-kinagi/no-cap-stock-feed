@@ -44,9 +44,10 @@ def send_stock_data(producer, stock_symbol):
 if __name__ == "__main__":
     producer = KafkaProducer(
         bootstrap_servers=KAFKA_SERVER,
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        api_version=(0, 11, 5)
     )
 
     while True:
         send_stock_data(producer, 'AAPL')  # Sending Apple stock data
-        time.sleep(60)  # Run every 60 seconds
+        time.sleep(60) 

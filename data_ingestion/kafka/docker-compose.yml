@@ -6,36 +6,38 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka-net
+      - spark-kafka-network
     ports:
       - "2181:2181"
 
   kafka:
     image: wurstmeister/kafka
     ports:
-      - "9092:9092"
+      - "9092:9092"  # Expose port for external connections
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ADVERTISED_HOST_NAME: localhost  
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092 
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092  
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_MESSAGE_MAX_BYTES: "1048576000"
       KAFKA_REPLICA_FETCH_MAX_BYTES: "1048576000"
-    healthcheck:
-      test: ["CMD", "kafka-topics.sh", "--zookeeper", "zookeeper:2181", "--list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5  
+    networks:
+      - kafka-net
+      - spark-kafka-network
     depends_on:
       - zookeeper
 
   producer:
     build:
       context: .
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
     environment:
       KAFKA_SERVER: kafka:9092
+    networks:
+      - kafka-net
     depends_on:
       - kafka
     command: python producer.py
@@ -43,9 +45,16 @@ services:
   consumer:
     build:
       context: .
-      dockerfile: dockerfile  # Ensure your Dockerfile can install the required dependencies
+      dockerfile: Dockerfile
     environment:
       KAFKA_SERVER: kafka:9092
+    networks:
+      - kafka-net
     depends_on:
       - kafka
-    command: python consumer.py  # This runs the consumer when the container starts
+    command: python consumer.py
+
+networks:
+  kafka-net:
+  spark-kafka-network:
+    external: true

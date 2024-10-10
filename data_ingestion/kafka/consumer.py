@@ -10,7 +10,8 @@ def consume_stock_data():
         bootstrap_servers=KAFKA_SERVER,
         value_deserializer=lambda m: json.loads(m.decode('utf-8')),
         auto_offset_reset='earliest', 
-        enable_auto_commit=True
+        enable_auto_commit=True,
+        api_version=(0, 11, 5),
     )
 
     print("Listening for messages...")
